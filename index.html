@@ -1,0 +1,1788 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EL CHINO CARRANZA - Sistema de Administración</title>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDgd0hZFb64DPCmrRedcDgD0ZkwwyatDfs",
+            authDomain: "app-taller-e07d2.firebaseapp.com",
+            projectId: "app-taller-e07d2",
+            storageBucket: "app-taller-e07d2.firebasestorage.app",
+            messagingSenderId: "762019943290",
+            appId: "1:762019943290:web:7989917d245f62243e7cc3",
+            measurementId: "G-W89C5GRMG7"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        window.firebaseDB = db;
+        window.firebaseAuth = auth;
+        window.firebaseModules = {
+            collection, doc, setDoc, getDoc, onSnapshot,
+            signInWithEmailAndPassword, signOut, onAuthStateChanged
+        };
+
+        console.log("✅ Firebase inicializado correctamente");
+    </script>
+
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js">
+    </script>
+
+    <style>
+        :root {
+            --bg-base: #0a0a0a;
+            --bg-sidebar: #0d0d0d;
+            --bg-card: #1a1a1a;
+            --bg-input: #1e1e1e;
+            --bg-hover: #252525;
+            --bg-modal: #181818;
+            --red: #e63946;
+            --red-hover: #c1121f;
+            --red-glow: #ff4757;
+            --white: #f5f5f5;
+            --text: #e0e0e0;
+            --text-muted: #999;
+            --border: #2a2a2a;
+            --border-light: #333;
+            --green: #2ecc71;
+            --gold: #f0a500;
+            --blue: #3498db;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-base);
+            color: var(--text);
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-base);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-light);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--red);
+        }
+
+        /* LOGIN SCREEN */
+        .login-container {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-base);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .login-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 40px 36px;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: var(--shadow);
+            animation: fadeSlideIn 0.5s ease;
+        }
+        .login-card .logo-login {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 28px;
+        }
+        .login-card .logo-login img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 10px rgba(230, 57, 70, 0.3));
+            transition: var(--transition);
+        }
+        .login-card .logo-login img:hover {
+            transform: scale(1.05);
+        }
+        .login-card h2 {
+            color: var(--white);
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            text-align: center;
+            line-height: 1.3;
+        }
+        .login-card h2 span {
+            color: var(--red);
+            display: block;
+            font-size: 1.8rem;
+        }
+        .login-card .form-group {
+            margin-bottom: 16px;
+        }
+        .login-card .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .login-card .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-light);
+            background: var(--bg-input);
+            color: var(--white);
+            font-size: 0.95rem;
+            transition: var(--transition);
+            font-family: inherit;
+        }
+        .login-card .form-group input:focus {
+            outline: none;
+            border-color: var(--red);
+            box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.15);
+        }
+        .login-error {
+            color: var(--red);
+            font-size: 0.8rem;
+            min-height: 20px;
+            margin-top: 4px;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 260px;
+            min-width: 260px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            z-index: 100;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            transition: var(--transition);
+        }
+        .sidebar-logo {
+            padding: 20px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar-logo img {
+            width: 42px;
+            height: 42px;
+            object-fit: contain;
+            flex-shrink: 0;
+            filter: drop-shadow(0 0 8px rgba(230, 57, 70, 0.2));
+        }
+        .sidebar-logo h2 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--white);
+            letter-spacing: -0.5px;
+            line-height: 1.3;
+        }
+        .sidebar-logo h2 span {
+            color: var(--red);
+            display: block;
+            font-size: 1rem;
+        }
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            overflow-y: auto;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.9rem;
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            white-space: nowrap;
+        }
+        .nav-item svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            stroke: currentColor;
+        }
+        .nav-item:hover {
+            background: var(--bg-hover);
+            color: var(--white);
+            transform: translateX(3px);
+        }
+        .nav-item.active {
+            background: var(--red);
+            color: #fff;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(230, 57, 70, 0.3);
+        }
+        .nav-item .badge {
+            margin-left: auto;
+            background: var(--red-glow);
+            color: #fff;
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-weight: 600;
+            animation: pulse-badge 2s infinite;
+        }
+        @keyframes pulse-badge {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.6;
+            }
+        }
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+        }
+        .sync-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            display: inline-block;
+            animation: pulse-sync 2s infinite;
+        }
+        @keyframes pulse-sync {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+        .btn-logout {
+            width: 100%;
+            padding: 8px 14px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid var(--border-light);
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+        .btn-logout:hover {
+            background: var(--red);
+            color: #fff;
+            border-color: var(--red);
+        }
+        .btn-logout svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+        }
+
+        /* MAIN */
+        .main-content {
+            flex: 1;
+            padding: 24px 28px;
+            overflow-y: auto;
+            max-height: 100vh;
+            transition: var(--transition);
+        }
+        .section {
+            display: none;
+            animation: fadeSlideIn 0.4s ease;
+        }
+        .section.active {
+            display: block;
+        }
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .section-header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--white);
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-header h1 svg {
+            width: 28px;
+            height: 28px;
+            stroke: var(--red);
+        }
+
+        /* CARDS */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+        .card:hover {
+            border-color: var(--border-light);
+            box-shadow: var(--shadow);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .card-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-header h3 svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--red);
+            border-radius: 4px 0 0 4px;
+        }
+        .stat-card.green::before {
+            background: var(--green);
+        }
+        .stat-card.gold::before {
+            background: var(--gold);
+        }
+        .stat-card.blue::before {
+            background: var(--blue);
+        }
+        .stat-card .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--white);
+            margin: 4px 0;
+        }
+        .stat-card .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* TABLES */
+        .table-container {
+            overflow-x: auto;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            min-width: 700px;
+        }
+        table thead {
+            background: var(--bg-hover);
+            position: sticky;
+            top: 0;
+        }
+        table th {
+            padding: 12px 14px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        table td {
+            padding: 11px 14px;
+            border-top: 1px solid var(--border);
+            color: var(--text);
+            white-space: nowrap;
+        }
+        table tbody tr {
+            transition: var(--transition);
+        }
+        table tbody tr:hover {
+            background: var(--bg-hover);
+        }
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .status-pendiente {
+            background: #3d2e00;
+            color: #f0a500;
+        }
+        .status-progreso {
+            background: #002b4d;
+            color: #3498db;
+        }
+        .status-completado {
+            background: #0d2b1a;
+            color: #2ecc71;
+        }
+
+        /* BUTTONS */
+        .btn {
+            padding: 10px 18px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+        .btn svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+        }
+        .btn-primary {
+            background: var(--red);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(230, 57, 70, 0.3);
+        }
+        .btn-primary:hover {
+            background: var(--red-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(230, 57, 70, 0.4);
+        }
+        .btn-secondary {
+            background: var(--bg-hover);
+            color: var(--white);
+            border: 1px solid var(--border-light);
+        }
+        .btn-secondary:hover {
+            background: var(--border-light);
+            border-color: #555;
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            border-radius: 6px;
+        }
+        .btn-danger {
+            background: transparent;
+            color: var(--red);
+            border: 1px solid var(--red);
+        }
+        .btn-danger:hover {
+            background: var(--red);
+            color: #fff;
+        }
+        .btn-success {
+            background: var(--green);
+            color: #fff;
+        }
+        .btn-success:hover {
+            background: #27ae60;
+        }
+
+        /* FORMS */
+        .form-group {
+            margin-bottom: 14px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-light);
+            background: var(--bg-input);
+            color: var(--white);
+            font-size: 0.9rem;
+            transition: var(--transition);
+            font-family: inherit;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--red);
+            box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.15);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        textarea {
+            resize: vertical;
+            min-height: 70px;
+        }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        .modal {
+            background: var(--bg-modal);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius);
+            padding: 0;
+            width: 90%;
+            max-width: 600px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow);
+            animation: scaleIn 0.25s ease;
+            position: relative;
+        }
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.92);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: var(--bg-modal);
+            z-index: 1;
+        }
+        .modal-header h3 {
+            font-size: 1.2rem;
+            color: var(--white);
+            margin: 0;
+        }
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid var(--border-light);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            font-size: 1.2rem;
+            padding: 0;
+        }
+        .modal-close:hover {
+            background: var(--red);
+            color: #fff;
+            border-color: var(--red);
+        }
+        .modal-body {
+            padding: 20px 24px;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+            flex-wrap: wrap;
+            position: sticky;
+            bottom: 0;
+            background: var(--bg-modal);
+        }
+
+        /* TOAST */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .toast {
+            padding: 12px 20px;
+            border-radius: var(--radius-sm);
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.85rem;
+            animation: slideToast 0.4s ease;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .toast-success {
+            background: #1a3a2a;
+            border: 1px solid var(--green);
+        }
+        .toast-error {
+            background: #3a1a1a;
+            border: 1px solid var(--red);
+        }
+        @keyframes slideToast {
+            from {
+                transform: translateX(120%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* CALENDAR */
+        .calendar {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+        .calendar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: var(--bg-hover);
+        }
+        .calendar-header h3 {
+            color: var(--white);
+            font-size: 1.1rem;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: var(--border);
+        }
+        .calendar-day-name {
+            background: var(--bg-hover);
+            padding: 10px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        .calendar-day {
+            background: var(--bg-card);
+            padding: 10px;
+            text-align: center;
+            min-height: 60px;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            font-weight: 500;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .calendar-day:hover {
+            background: var(--bg-hover);
+        }
+        .calendar-day.today {
+            border: 2px solid var(--red);
+            border-radius: 4px;
+        }
+        .calendar-day .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .calendar-day .dot.red {
+            background: var(--red);
+        }
+        .calendar-day .dot.green {
+            background: var(--green);
+        }
+        .calendar-day .dot.blue {
+            background: var(--blue);
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin: 1px;
+        }
+        .tag-efectivo {
+            background: #1a3a1a;
+            color: #4caf50;
+        }
+        .tag-yape {
+            background: #1a1a3a;
+            color: #7c8aff;
+        }
+        .tag-otro {
+            background: #3a2a1a;
+            color: #ff9800;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 60px;
+                min-width: 60px;
+            }
+            .sidebar-logo h2,
+            .nav-item span:not(.nav-icon-text),
+            .sidebar-footer span,
+            .nav-item .badge,
+            .btn-logout span {
+                display: none;
+            }
+            .nav-item {
+                justify-content: center;
+                padding: 12px;
+            }
+            .btn-logout {
+                justify-content: center;
+                padding: 8px;
+            }
+            .main-content {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div class="login-container" id="loginScreen">
+        <div class="login-card">
+            <div class="logo-login">
+                <img src="Icon_taller.png" alt="EL CHINO CARRANZA">
+                <h2>EL CHINO <span>CARRANZA</span></h2>
+            </div>
+            <div id="loginForm">
+                <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="correo@ejemplo.com"></div>
+                <div class="form-group"><label>Contraseña</label><input type="password" id="loginPassword" placeholder="********"></div>
+                <div class="login-error" id="loginError"></div>
+                <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="handleLogin()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                    Iniciar Sesión
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- APP (oculta hasta login) -->
+    <div id="appContainer" class="hidden" style="display:flex;width:100%;">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <img src="Icon_taller.png" alt="Logo">
+                <h2>EL CHINO <span>CARRANZA</span></h2>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-section="dashboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    <span class="nav-icon-text">Dashboard</span>
+                </button>
+                <button class="nav-item" data-section="trabajos">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    <span class="nav-icon-text">Trabajos</span>
+                    <span class="badge" id="badge-trabajos-pendientes">0</span>
+                </button>
+                <button class="nav-item" data-section="trabajadores">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                    <span class="nav-icon-text">Trabajadores</span>
+                </button>
+                <button class="nav-item" data-section="materiales">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+                    <span class="nav-icon-text">Materiales</span>
+                </button>
+                <button class="nav-item" data-section="clientes">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <span class="nav-icon-text">Clientes</span>
+                </button>
+                <button class="nav-item" data-section="presupuestos">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    <span class="nav-icon-text">Presupuestos</span>
+                </button>
+                <button class="nav-item" data-section="egresos">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                    <span class="nav-icon-text">Egresos</span>
+                </button>
+                <button class="nav-item" data-section="asistencia">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span class="nav-icon-text">Asistencia</span>
+                </button>
+                <button class="nav-item" data-section="calendario">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
+                    <span class="nav-icon-text">Calendario</span>
+                </button>
+                <button class="nav-item" data-section="exportar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span class="nav-icon-text">Exportar Excel</span>
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <span class="sync-indicator" id="syncIndicator"></span>
+                <span id="syncStatus">Conectado</span>
+                <button class="btn-logout" onclick="handleLogout()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    <span>Cerrar Sesión</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content" id="mainContent">
+            <!-- DASHBOARD -->
+            <section class="section active" id="section-dashboard">
+                <div class="section-header"><h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> Dashboard</h1></div>
+                <div class="stats-grid" id="dashboard-stats"></div>
+                <div class="card" style="margin-top:16px;">
+                    <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg> Próximos Pagos a Trabajadores</h3></div>
+                    <div class="table-container"><table><thead><tr><th>Trabajador</th><th>Sueldo Base</th><th>Anticipos</th><th>Descuentos (Faltas)</th><th>Total a Pagar</th><th>Fecha Pago</th></tr></thead><tbody id="dashboard-pagos-tbody"></tbody></table></div>
+                </div>
+                <div class="card" style="margin-top:16px;">
+                    <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/></svg> Trabajos Pendientes</h3></div>
+                    <div class="table-container"><table><thead><tr><th>Cliente</th><th>Vehículo</th><th>Descripción</th><th>Fecha</th><th>Estado</th><th>Costo</th></tr></thead><tbody id="dashboard-trabajos-tbody"></tbody></table></div>
+                </div>
+            </section>
+
+            <!-- TRABAJOS -->
+            <section class="section" id="section-trabajos">
+                <div class="section-header"><h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/></svg> Trabajos</h1><button class="btn btn-primary" onclick="abrirModalTrabajo()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nuevo Trabajo</button></div>
+                <div class="card"><div class="card-header"><h3>Registro de Trabajos</h3><select id="filtro-estado-trabajo" onchange="renderTablaTrabajos()" style="padding:8px 12px;border-radius:6px;background:var(--bg-input);color:var(--white);border:1px solid var(--border-light);"><option value="todos">Todos</option><option value="pendiente">Pendientes</option><option value="en progreso">En Progreso</option><option value="completado">Completados</option></select></div><div class="table-container"><table><thead><tr><th>ID</th><th>Cliente</th><th>Vehículo</th><th>Descripción</th><th>Fecha</th><th>Estado</th><th>Costo (S/)</th><th>Trabajador</th><th>Acciones</th></tr></thead><tbody id="trabajos-tbody"></tbody></table></div></div>
+            </section>
+
+            <!-- TRABAJADORES -->
+            <section class="section" id="section-trabajadores">
+                <div class="section-header"><h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/></svg> Trabajadores</h1><button class="btn btn-primary" onclick="abrirModalTrabajador()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Agregar Trabajador</button></div>
+                <div class="card"><div class="card-header"><h3>Personal Registrado</h3></div><div class="table-container"><table><thead><tr><th>Nombre</th><th>Teléfono</th><th>Sueldo Base (S/)</th><th>Fecha de Pago</th><th>Anticipos (S/)</th><th>Acciones</th></tr></thead><tbody id="trabajadores-tbody"></tbody></table></div></div>
+            </section>
+
+            <!-- MATERIALES -->
+            <section class="section" id="section-materiales">
+                <div class="section-header"><h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg> Materiales</h1><button class="btn btn-primary" onclick="abrirModalMaterial()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Agregar Material</button></div>
+                <div class="card"><div class="card-header"><h3>Inventario</h3></div><div class="table-container"><table><thead><tr><th>Material</th><th>Stock</th><th>Precio Unit. (S/)</th><th>Total Inventario (S/)</th><th>Acciones</th></tr></thead><tbody id="materiales-tbody"></tbody></table></div></div>
+            </section>
+
+            <!-- CLIENTES -->
+            <section class="section" id="section-clientes">
+                <div class="section-header"><h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Clientes</h1><button class="btn btn-primary" onclick="abrirModalCliente()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Agregar Cliente</button></div>
+                <div class="card"><div class="card-header"><h3>Registro de Clientes (Presets Rápidos)</h3></div><div class="table-container"><table><thead><tr><th>Nombre</th><th>Teléfono</th><th>Vehículo</th><th>Placa</th><th>Acciones</th></tr></thead><tbody id="clientes-tbody"></tbody></table></div></div>
+            </section>
+
+            <!-- PRESUPUESTOS -->
+            <section class="section" id="section-presupuestos">
+                <div class="section-header"><h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Presupuestos</h1><button class="btn btn-primary" onclick="abrirModalPresupuesto()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nuevo Presupuesto</button></div>
+                <div class="card"><div class="card-header"><h3>Compras Futuras Anticipadas</h3></div><div class="table-container"><table><thead><tr><th>Descripción</th><th>Monto (S/)</th><th>Fecha Límite</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="presupuestos-tbody"></tbody></table></div></div>
+            </section>
+
+            <!-- EGRESOS -->
+            <section class="section" id="section-egresos">
+                <div class="section-header"><h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> Egresos</h1><button class="btn btn-primary" onclick="abrirModalEgreso()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Registrar Egreso</button></div>
+                <div class="card"><div class="card-header"><h3>Gastos Registrados</h3></div><div class="table-container"><table><thead><tr><th>Descripción</th><th>Monto (S/)</th><th>Método Pago</th><th>Fecha</th><th>Acciones</th></tr></thead><tbody id="egresos-tbody"></tbody></table></div></div>
+            </section>
+
+            <!-- ASISTENCIA -->
+            <section class="section" id="section-asistencia">
+                <div class="section-header"><h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg> Asistencia de Personal</h1><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><input type="date" id="fecha-asistencia" onchange="renderAsistencia()" style="padding:8px 12px;border-radius:6px;background:var(--bg-input);color:var(--white);border:1px solid var(--border-light);"><button class="btn btn-primary btn-sm" onclick="marcarTodosPresentes()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Marcar Todos Presentes</button></div></div>
+                <div class="card"><div class="card-header"><h3>Registro Diario - Descuentos Automáticos por Falta</h3></div><div class="table-container"><table><thead><tr><th>Trabajador</th><th>Presente</th><th>Descuento por Falta (S/)</th><th>Faltas este Mes</th></tr></thead><tbody id="asistencia-tbody"></tbody></table></div></div>
+            </section>
+
+            <!-- CALENDARIO -->
+            <section class="section" id="section-calendario">
+                <div class="section-header"><h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/></svg> Calendario</h1></div>
+                <div class="calendar" id="calendar-widget"></div>
+                <div class="card" style="margin-top:16px;"><div class="card-header"><h3>📌 Leyenda</h3></div><div style="display:flex;gap:16px;flex-wrap:wrap;"><span><span class="dot red" style="display:inline-block;width:10px;height:10px;border-radius:50%;"></span> Trabajos programados</span><span><span class="dot green" style="display:inline-block;width:10px;height:10px;border-radius:50%;"></span> Pagos a trabajadores</span><span><span class="dot blue" style="display:inline-block;width:10px;height:10px;border-radius:50%;"></span> Presupuestos límite</span></div></div>
+                <div class="card" style="margin-top:16px;" id="calendar-detail-card"><div class="card-header"><h3>📋 Detalle del Día</h3></div><div id="calendar-detail-content"><p class="empty-state">Selecciona un día para ver detalles</p></div></div>
+            </section>
+
+            <!-- EXPORTAR -->
+            <section class="section" id="section-exportar">
+                <div class="section-header"><h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg> Exportar Resumen Mensual</h1></div>
+                <div class="card"><div class="card-header"><h3>Generar Reporte Excel</h3></div><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;"><input type="month" id="mes-exportar" style="padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-input);color:var(--white);border:1px solid var(--border-light);font-size:0.9rem;"><button class="btn btn-primary" onclick="exportarExcel()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg> Exportar a Excel</button><button class="btn btn-success" onclick="exportarResumenCompleto()">📊 Exportar Resumen Completo</button></div><div id="export-preview" style="margin-top:16px;"></div></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL -->
+    <div id="modal-overlay" class="modal-overlay" style="display:none;" onclick="cerrarModal(event)">
+        <div class="modal" id="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 id="modal-title">Título</h3>
+                <button class="modal-close" onclick="cerrarModalDirecto()" title="Cerrar">✕</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-actions" id="modal-actions"></div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // ──────────────────────────────────────
+        // ESPERAR FIREBASE
+        // ──────────────────────────────────────
+        let db, auth, firebaseModules, currentUser = null;
+
+        function waitForFirebase() {
+            return new Promise((resolve) => {
+                const check = () => {
+                    if (window.firebaseDB && window.firebaseAuth && window.firebaseModules) {
+                        db = window.firebaseDB;
+                        auth = window.firebaseAuth;
+                        firebaseModules = window.firebaseModules;
+                        resolve();
+                    } else { setTimeout(check, 100); }
+                };
+                check();
+            });
+        }
+
+        // ──────────────────────────────────────
+        // DATOS
+        // ──────────────────────────────────────
+        let data = { trabajos: [], trabajadores: [], materiales: [], clientes: [], presupuestos: [], egresos: [], asistencias: [], anticipos: [] };
+
+        function generarId() { return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6); }
+
+        function getDataDocRef() {
+            if (!currentUser) return null;
+            return firebaseModules.doc(db, "users", currentUser.uid, "data", "mainData");
+        }
+
+        async function guardarDatosFirebase() {
+            if (!currentUser) return false;
+            try {
+                await firebaseModules.setDoc(getDataDocRef(), {
+                    trabajos: data.trabajos, trabajadores: data.trabajadores, materiales: data.materiales,
+                    clientes: data.clientes, presupuestos: data.presupuestos, egresos: data.egresos,
+                    asistencias: data.asistencias, anticipos: data.anticipos, lastUpdate: new Date().toISOString()
+                });
+                updateSyncStatus(true);
+                return true;
+            } catch (error) {
+                console.error("Error al guardar:", error);
+                updateSyncStatus(false);
+                localStorage.setItem('tallerpro_backup_' + (currentUser?.uid || 'anon'), JSON.stringify(data));
+                return false;
+            }
+        }
+
+        async function cargarDatosFirebase() {
+            if (!currentUser) return false;
+            try {
+                const docSnap = await firebaseModules.getDoc(getDataDocRef());
+                if (docSnap.exists()) {
+                    const fd = docSnap.data();
+                    data = {
+                        trabajos: fd.trabajos || [], trabajadores: fd.trabajadores || [], materiales: fd.materiales || [],
+                        clientes: fd.clientes || [], presupuestos: fd.presupuestos || [], egresos: fd.egresos || [],
+                        asistencias: fd.asistencias || [], anticipos: fd.anticipos || []
+                    };
+                    updateSyncStatus(true);
+                    return true;
+                } else {
+                    data = { trabajos: [], trabajadores: [], materiales: [], clientes: [], presupuestos: [], egresos: [], asistencias: [], anticipos: [] };
+                    await guardarDatosFirebase();
+                    return true;
+                }
+            } catch (error) {
+                console.error("Error al cargar:", error);
+                updateSyncStatus(false);
+                data = { trabajos: [], trabajadores: [], materiales: [], clientes: [], presupuestos: [], egresos: [], asistencias: [], anticipos: [] };
+                return false;
+            }
+        }
+
+        function updateSyncStatus(connected) {
+            const indicator = document.getElementById('syncIndicator');
+            const status = document.getElementById('syncStatus');
+            if (indicator && status) {
+                indicator.style.background = connected ? 'var(--green)' : 'var(--gold)';
+                status.textContent = connected ? 'Firebase conectado' : 'Modo offline';
+            }
+        }
+
+        function activarTiempoReal() {
+            if (!currentUser) return;
+            try {
+                firebaseModules.onSnapshot(getDataDocRef(), (docSnap) => {
+                    if (docSnap.exists()) {
+                        const fd = docSnap.data();
+                        data = {
+                            trabajos: fd.trabajos || [], trabajadores: fd.trabajadores || [], materiales: fd.materiales || [],
+                            clientes: fd.clientes || [], presupuestos: fd.presupuestos || [], egresos: fd.egresos || [],
+                            asistencias: fd.asistencias || [], anticipos: fd.anticipos || []
+                        };
+                        refrescarInterfazCompleta();
+                        updateSyncStatus(true);
+                    }
+                });
+            } catch (error) { console.error("Error tiempo real:", error); }
+        }
+
+        function refrescarInterfazCompleta() {
+            renderDashboard();
+            const seccionActiva = document.querySelector('.section.active');
+            if (seccionActiva) {
+                const id = seccionActiva.id;
+                if (id === 'section-trabajos') renderTablaTrabajos();
+                if (id === 'section-trabajadores') renderTablaTrabajadores();
+                if (id === 'section-materiales') renderTablaMateriales();
+                if (id === 'section-clientes') renderTablaClientes();
+                if (id === 'section-presupuestos') renderTablaPresupuestos();
+                if (id === 'section-egresos') renderTablaEgresos();
+                if (id === 'section-asistencia') renderAsistencia();
+                if (id === 'section-calendario') renderCalendario();
+            }
+        }
+
+        // ──────────────────────────────────────
+        // AUTH (SOLO LOGIN)
+        // ──────────────────────────────────────
+        async function handleLogin() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const errorEl = document.getElementById('loginError');
+            errorEl.textContent = '';
+            if (!email || !password) { errorEl.textContent = 'Completa todos los campos.'; return; }
+            try {
+                await firebaseModules.signInWithEmailAndPassword(auth, email, password);
+                toast('Bienvenido a EL CHINO CARRANZA ✅');
+            } catch (error) {
+                let msg = 'Error al iniciar sesión.';
+                if (error.code === 'auth/invalid-credential') msg = 'Credenciales inválidas.';
+                if (error.code === 'auth/user-not-found') msg = 'Usuario no encontrado.';
+                if (error.code === 'auth/wrong-password') msg = 'Contraseña incorrecta.';
+                errorEl.textContent = msg;
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await firebaseModules.signOut(auth);
+                data = { trabajos: [], trabajadores: [], materiales: [], clientes: [], presupuestos: [], egresos: [], asistencias: [], anticipos: [] };
+                toast('Sesión cerrada');
+            } catch (error) { toast('Error al cerrar sesión', 'error'); }
+        }
+
+        // ──────────────────────────────────────
+        // TOAST
+        // ──────────────────────────────────────
+        function toast(msg, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const el = document.createElement('div');
+            el.className = `toast toast-${type}`;
+            el.textContent = msg;
+            container.appendChild(el);
+            setTimeout(() => { el.style.opacity = '0';
+                el.style.transition = 'opacity 0.3s';
+                setTimeout(() => el.remove(), 300); }, 2800);
+        }
+
+        // ──────────────────────────────────────
+        // NAVEGACIÓN
+        // ──────────────────────────────────────
+        document.querySelectorAll('.nav-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const sectionId = btn.dataset.section;
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                const target = document.getElementById('section-' + sectionId);
+                if (target) target.classList.add('active');
+                if (sectionId === 'dashboard') renderDashboard();
+                if (sectionId === 'trabajos') renderTablaTrabajos();
+                if (sectionId === 'trabajadores') renderTablaTrabajadores();
+                if (sectionId === 'materiales') renderTablaMateriales();
+                if (sectionId === 'clientes') renderTablaClientes();
+                if (sectionId === 'presupuestos') renderTablaPresupuestos();
+                if (sectionId === 'egresos') renderTablaEgresos();
+                if (sectionId === 'asistencia') renderAsistencia();
+                if (sectionId === 'calendario') renderCalendario();
+                if (sectionId === 'exportar') { document.getElementById('mes-exportar').value = new Date().toISOString().slice(0, 7);
+                    actualizarPreviewExport(); }
+            });
+        });
+
+        // ──────────────────────────────────────
+        // MODAL
+        // ──────────────────────────────────────
+        function abrirModal(titulo, contenidoHtml, accionesHtml = '') {
+            document.getElementById('modal-title').textContent = titulo;
+            document.getElementById('modal-body').innerHTML = contenidoHtml;
+            document.getElementById('modal-actions').innerHTML = accionesHtml;
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function cerrarModal(e) {
+            if (e && e.target !== document.getElementById('modal-overlay')) return;
+            document.getElementById('modal-overlay').style.display = 'none';
+        }
+
+        function cerrarModalDirecto() {
+            document.getElementById('modal-overlay').style.display = 'none';
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') document.getElementById('modal-overlay').style.display = 'none';
+        });
+
+        // ──────────────────────────────────────
+        // HELPERS
+        // ──────────────────────────────────────
+        function getTrabajadorNombre(id) { const t = data.trabajadores.find(x => x.id === id); return t ? t.nombre :
+            'Sin asignar'; }
+
+        function getClienteNombre(id) { const c = data.clientes.find(x => x.id === id); return c ? c.nombre :
+        'Sin cliente'; }
+
+        function getAnticiposTrabajador(tid) { return data.anticipos.filter(a => a.trabajadorId === tid).reduce((s, a) => s +
+                (parseFloat(a.monto) || 0), 0); }
+
+        function getFaltasMes(tid, mes, anio) { return data.asistencias.filter(a => { if (a.trabajadorId !== tid || a
+                    .presente) return false;
+                const d = new Date(a.fecha); return d.getMonth() === mes && d.getFullYear() === anio; }).length; }
+
+        function getDescuentoPorFalta(tid) { const t = data.trabajadores.find(x => x.id === tid); if (!t) return 0; return Math
+                .round(((parseFloat(t.sueldo) || 0) / 30) * 100) / 100; }
+
+        function getTotalPagoTrabajador(tid) { const t = data.trabajadores.find(x => x.id === tid); if (!t) return 0; const
+                ahora = new Date(); const faltas = getFaltasMes(tid, ahora.getMonth(), ahora.getFullYear()); return Math
+                .max(0, (parseFloat(t.sueldo) || 0) - faltas * getDescuentoPorFalta(tid) - getAnticiposTrabajador(tid)); }
+
+        function hoyFecha() { return new Date().toISOString().slice(0, 10); }
+
+        // ──────────────────────────────────────
+        // DASHBOARD
+        // ──────────────────────────────────────
+        function renderDashboard() {
+            const ahora = new Date();
+            const mes = ahora.getMonth(),
+                anio = ahora.getFullYear();
+            const trabajosMes = data.trabajos.filter(t => { const d = new Date(t.fecha); return d.getMonth() === mes && d
+                    .getFullYear() === anio; });
+            const ingresosMes = trabajosMes.reduce((s, t) => s + (parseFloat(t.costo) || 0), 0);
+            const egresosMes = data.egresos.filter(e => { const d = new Date(e.fecha); return d.getMonth() === mes && d
+                    .getFullYear() === anio; }).reduce((s, e) => s + (parseFloat(e.monto) || 0), 0);
+            const pagosTrab = data.trabajadores.reduce((s, t) => s + getTotalPagoTrabajador(t.id), 0);
+            const ganancia = ingresosMes - egresosMes - pagosTrab;
+            const pendientes = data.trabajos.filter(t => t.estado !== 'completado').length;
+            document.getElementById('dashboard-stats').innerHTML = `
+            <div class="stat-card"><div class="stat-label">Ingresos del Mes</div><div class="stat-value">S/ ${ingresosMes.toFixed(2)}</div></div>
+            <div class="stat-card green"><div class="stat-label">Ganancia Neta</div><div class="stat-value">S/ ${ganancia.toFixed(2)}</div></div>
+            <div class="stat-card gold"><div class="stat-label">Egresos</div><div class="stat-value">S/ ${egresosMes.toFixed(2)}</div></div>
+            <div class="stat-card blue"><div class="stat-label">Pendientes</div><div class="stat-value">${pendientes}</div></div>
+            <div class="stat-card"><div class="stat-label">Pago Personal</div><div class="stat-value">S/ ${pagosTrab.toFixed(2)}</div></div>`;
+            const pTbody = document.getElementById('dashboard-pagos-tbody');
+            pTbody.innerHTML = data.trabajadores.map(t => {
+                const total = getTotalPagoTrabajador(t.id),
+                    ant = getAnticiposTrabajador(t.id),
+                    f = getFaltasMes(t.id, mes, anio),
+                    desc = f * getDescuentoPorFalta(t.id);
+                return `<tr><td><strong>${t.nombre}</strong></td><td>S/ ${(parseFloat(t.sueldo)||0).toFixed(2)}</td><td style="color:#f0a500;">- S/ ${ant.toFixed(2)}</td><td style="color:#e63946;">- S/ ${desc.toFixed(2)} (${f} faltas)</td><td><strong style="color:#2ecc71;">S/ ${total.toFixed(2)}</strong></td><td>${t.fechaPago||'No definida'}</td></tr>`;
+            }).join('') || '<tr><td colspan="6" class="empty-state">No hay trabajadores</td></tr>';
+            const tTbody = document.getElementById('dashboard-trabajos-tbody');
+            const pendList = data.trabajos.filter(t => t.estado !== 'completado').slice(0, 10);
+            tTbody.innerHTML = pendList.map(t =>
+                `<tr><td>${getClienteNombre(t.clienteId)}</td><td>${t.vehiculo||'-'}</td><td>${t.descripcion}</td><td>${t.fecha}</td><td><span class="status-badge status-${t.estado.replace(' ','-')}">${t.estado}</span></td><td>S/ ${(parseFloat(t.costo)||0).toFixed(2)}</td></tr>`
+                ).join('') || '<tr><td colspan="6" class="empty-state">No hay trabajos</td></tr>';
+            document.getElementById('badge-trabajos-pendientes').textContent = pendientes;
+        }
+
+        // ──────────────────────────────────────
+        // CRUD TRABAJOS
+        // ──────────────────────────────────────
+        function renderTablaTrabajos() {
+            const filtro = document.getElementById('filtro-estado-trabajo')?.value || 'todos';
+            let lista = data.trabajos;
+            if (filtro !== 'todos') lista = lista.filter(t => t.estado === filtro);
+            lista.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+            document.getElementById('trabajos-tbody').innerHTML = lista.map(t => `
+            <tr><td><small>${t.id.slice(-6)}</small></td><td>${getClienteNombre(t.clienteId)}</td><td>${t.vehiculo||'-'}</td><td>${t.descripcion}</td><td>${t.fecha}</td>
+            <td><span class="status-badge status-${t.estado.replace(' ','-')}">${t.estado}</span></td><td><strong>S/ ${(parseFloat(t.costo)||0).toFixed(2)}</strong></td><td>${getTrabajadorNombre(t.trabajadorId)}</td>
+            <td><button class="btn btn-sm btn-secondary" onclick="editarTrabajo('${t.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+            <button class="btn btn-sm btn-danger" onclick="eliminarTrabajo('${t.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></td></tr>`
+            ).join('') || '<tr><td colspan="9" class="empty-state">No hay trabajos</td></tr>';
+        }
+
+        function abrirModalTrabajo(tEd = null) {
+            const esEd = !!tEd;
+            const t = tEd || { id: '', clienteId: '', vehiculo: '', descripcion: '', fecha: hoyFecha(), estado: 'pendiente', costo: '', trabajadorId: '' };
+            const cOpts = data.clientes.map(c =>
+                `<option value="${c.id}" ${t.clienteId===c.id?'selected':''}>${c.nombre} - ${c.vehiculo||'Sin vehículo'}</option>`
+                ).join('');
+            const trOpts = data.trabajadores.map(tr =>
+                `<option value="${tr.id}" ${t.trabajadorId===tr.id?'selected':''}>${tr.nombre}</option>`).join('');
+            abrirModal(
+                esEd ? 'Editar Trabajo' : 'Nuevo Trabajo',
+                `<div class="form-row"><div class="form-group"><label>Cliente</label><select id="mf-clienteId">${cOpts}</select></div><div class="form-group"><label>Vehículo</label><input id="mf-vehiculo" value="${t.vehiculo||''}"></div></div>
+            <div class="form-group"><label>Descripción</label><textarea id="mf-descripcion">${t.descripcion||''}</textarea></div>
+            <div class="form-row"><div class="form-group"><label>Fecha</label><input type="date" id="mf-fecha" value="${t.fecha}"></div><div class="form-group"><label>Estado</label><select id="mf-estado"><option value="pendiente" ${t.estado==='pendiente'?'selected':''}>Pendiente</option><option value="en progreso" ${t.estado==='en progreso'?'selected':''}>En Progreso</option><option value="completado" ${t.estado==='completado'?'selected':''}>Completado</option></select></div></div>
+            <div class="form-row"><div class="form-group"><label>Costo (S/)</label><input type="number" id="mf-costo" value="${t.costo||''}" step="0.01"></div><div class="form-group"><label>Trabajador</label><select id="mf-trabajadorId"><option value="">Sin asignar</option>${trOpts}</select></div></div>`,
+                `<button class="btn btn-secondary" onclick="cerrarModalDirecto()">Cancelar</button><button class="btn btn-primary" onclick="guardarTrabajo('${t.id}')">${esEd?'Actualizar':'Guardar'}</button>`
+            );
+        }
+
+        async function guardarTrabajo(idOrig) {
+            const t = {
+                id: idOrig || generarId(),
+                clienteId: document.getElementById('mf-clienteId').value,
+                vehiculo: document.getElementById('mf-vehiculo').value,
+                descripcion: document.getElementById('mf-descripcion').value,
+                fecha: document.getElementById('mf-fecha').value,
+                estado: document.getElementById('mf-estado').value,
+                costo: parseFloat(document.getElementById('mf-costo').value) || 0,
+                trabajadorId: document.getElementById('mf-trabajadorId').value,
+                materialesUsados: ''
+            };
+            if (!t.descripcion) { toast('Descripción obligatoria', 'error'); return; }
+            if (idOrig) { const idx = data.trabajos.findIndex(x => x.id === idOrig); if (idx >= 0) data.trabajos[idx] =
+                t; } else data.trabajos.push(t);
+            await guardarDatosFirebase();
+            cerrarModalDirecto();
+            renderTablaTrabajos();
+            renderDashboard();
+            toast(idOrig ? 'Trabajo actualizado' : 'Trabajo creado');
+        }
+
+        function editarTrabajo(id) { const t = data.trabajos.find(x => x.id === id); if (t) abrirModalTrabajo(t); }
+
+        async function eliminarTrabajo(id) {
+            if (confirm('¿Eliminar este trabajo?')) {
+                data.trabajos = data.trabajos.filter(x => x.id !== id);
+                await guardarDatosFirebase();
+                renderTablaTrabajos();
+                renderDashboard();
+                toast('Trabajo eliminado ✅');
+            }
+        }
+
+        // ──────────────────────────────────────
+        // TRABAJADORES
+        // ──────────────────────────────────────
+        function renderTablaTrabajadores() { document.getElementById('trabajadores-tbody').innerHTML = data.trabajadores.map(
+                t => {
+                    const ant = getAnticiposTrabajador(t.id); return `<tr><td><strong>${t.nombre}</strong></td><td>${t.telefono||'-'}</td><td>S/ ${(parseFloat(t.sueldo)||0).toFixed(2)}</td><td>${t.fechaPago||'No definida'}</td><td style="color:#f0a500;">S/ ${ant.toFixed(2)}</td><td><button class="btn btn-sm btn-secondary" onclick="abrirModalAnticipo('${t.id}')">💵</button> <button class="btn btn-sm btn-secondary" onclick="editarTrabajador('${t.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button> <button class="btn btn-sm btn-danger" onclick="eliminarTrabajador('${t.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></td></tr>`;
+                }).join('') || '<tr><td colspan="6" class="empty-state">No hay trabajadores</td></tr>'; }
+
+        function abrirModalTrabajador(tEd = null) { const esEd = !!tEd; const t = tEd || { id: '', nombre: '', telefono: '',
+                sueldo: '', fechaPago: '25' };
+            abrirModal(
+                esEd ? 'Editar Trabajador' : 'Agregar Trabajador',
+                `<div class="form-row"><div class="form-group"><label>Nombre</label><input id="mf-tnombre" value="${t.nombre||''}"></div><div class="form-group"><label>Teléfono</label><input id="mf-ttelefono" value="${t.telefono||''}"></div></div><div class="form-row"><div class="form-group"><label>Sueldo Base (S/)</label><input type="number" id="mf-tsueldo" value="${t.sueldo||''}" step="0.01"></div><div class="form-group"><label>Día de Pago (1-31)</label><input type="number" id="mf-tfechapago" value="${t.fechaPago||'25'}" min="1" max="31"></div></div>`,
+                `<button class="btn btn-secondary" onclick="cerrarModalDirecto()">Cancelar</button><button class="btn btn-primary" onclick="guardarTrabajador('${t.id}')">${esEd?'Actualizar':'Guardar'}</button>`
+            );
+        }
+
+        async function guardarTrabajador(idOrig) { const t = { id: idOrig || generarId(), nombre: document.getElementById(
+                    'mf-tnombre').value, telefono: document.getElementById('mf-ttelefono').value, sueldo: parseFloat(document
+                    .getElementById('mf-tsueldo').value) || 0, fechaPago: document.getElementById('mf-tfechapago')
+                .value }; if (!t.nombre) { toast('Nombre obligatorio', 'error'); return; } if (idOrig) { const idx = data
+                    .trabajadores.findIndex(x => x.id === idOrig); if (idx >= 0) data.trabajadores[idx] = t; } else data
+                .trabajadores.push(t); await guardarDatosFirebase();
+            cerrarModalDirecto();
+            renderTablaTrabajadores();
+            renderDashboard();
+            toast(idOrig ? 'Trabajador actualizado' : 'Trabajador agregado'); }
+
+        function editarTrabajador(id) { const t = data.trabajadores.find(x => x.id === id); if (t) abrirModalTrabajador(t); }
+
+        async function eliminarTrabajador(id) {
+            if (confirm('¿Eliminar este trabajador? Se eliminarán sus anticipos y asistencias.')) {
+                data.trabajadores = data.trabajadores.filter(x => x.id !== id);
+                data.anticipos = data.anticipos.filter(x => x.trabajadorId !== id);
+                data.asistencias = data.asistencias.filter(x => x.trabajadorId !== id);
+                await guardarDatosFirebase();
+                renderTablaTrabajadores();
+                renderDashboard();
+                toast('Trabajador eliminado ✅');
+            }
+        }
+
+        function abrirModalAnticipo(tid) { const t = data.trabajadores.find(x => x.id === tid);
+            abrirModal(
+                `💵 Anticipo - ${t?.nombre||''}`,
+                `<div class="form-group"><label>Monto (S/)</label><input type="number" id="mf-amonto" step="0.01"></div><div class="form-group"><label>Descripción</label><input id="mf-adesc"></div><div class="form-group"><label>Fecha</label><input type="date" id="mf-afecha" value="${hoyFecha()}"></div>`,
+                `<button class="btn btn-secondary" onclick="cerrarModalDirecto()">Cancelar</button><button class="btn btn-primary" onclick="guardarAnticipo('${tid}')">Registrar</button>`
+            );
+        }
+
+        async function guardarAnticipo(tid) { const monto = parseFloat(document.getElementById('mf-amonto').value); if (
+                !monto || monto <= 0) { toast('Monto inválido', 'error'); return; }
+            data.anticipos.push({ id: generarId(), trabajadorId: tid, monto, descripcion: document.getElementById(
+                    'mf-adesc').value, fecha: document.getElementById('mf-afecha').value }); await guardarDatosFirebase();
+            cerrarModalDirecto();
+            renderTablaTrabajadores();
+            renderDashboard();
+            toast('Anticipo registrado'); }
+
+        // ──────────────────────────────────────
+        // MATERIALES
+        // ──────────────────────────────────────
+        function renderTablaMateriales() { document.getElementById('materiales-tbody').innerHTML = data.materiales.map(m =>
+                `<tr><td><strong>${m.nombre}</strong></td><td>${m.stock}</td><td>S/ ${(parseFloat(m.precio)||0).toFixed(2)}</td><td>S/ ${((parseFloat(m.stock)||0)*(parseFloat(m.precio)||0)).toFixed(2)}</td><td><button class="btn btn-sm btn-secondary" onclick="editarMaterial('${m.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button> <button class="btn btn-sm btn-danger" onclick="eliminarMaterial('${m.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></td></tr>`
+                ).join('') || '<tr><td colspan="5" class="empty-state">No hay materiales</td></tr>'; }
+
+        function abrirModalMaterial(mEd = null) { const esEd = !!mEd; const m = mEd || { id: '', nombre: '', stock: '',
+                precio: '' };
+            abrirModal(
+                esEd ? 'Editar Material' : 'Agregar Material',
+                `<div class="form-group"><label>Nombre</label><input id="mf-mnombre" value="${m.nombre||''}"></div><div class="form-row"><div class="form-group"><label>Stock</label><input type="number" id="mf-mstock" value="${m.stock||''}"></div><div class="form-group"><label>Precio Unit. (S/)</label><input type="number" id="mf-mprecio" value="${m.precio||''}" step="0.01"></div></div>`,
+                `<button class="btn btn-secondary" onclick="cerrarModalDirecto()">Cancelar</button><button class="btn btn-primary" onclick="guardarMaterial('${m.id}')">${esEd?'Actualizar':'Guardar'}</button>`
+            );
+        }
+
+        async function guardarMaterial(idOrig) { const m = { id: idOrig || generarId(), nombre: document.getElementById(
+                    'mf-mnombre').value, stock: parseInt(document.getElementById('mf-mstock').value) || 0, precio: parseFloat(
+                    document.getElementById('mf-mprecio').value) || 0 }; if (!m.nombre) { toast('Nombre obligatorio',
+                    'error'); return; } if (idOrig) { const idx = data.materiales.findIndex(x => x.id === idOrig); if (idx >=
+                    0) data.materiales[idx] = m; } else data.materiales.push(m); await guardarDatosFirebase();
+            cerrarModalDirecto();
+            renderTablaMateriales();
+            toast(idOrig ? 'Material actualizado' : 'Material agregado'); }
+
+        function editarMaterial(id) { const m = data.materiales.find(x => x.id === id); if (m) abrirModalMaterial(m); }
+
+        async function eliminarMaterial(id) {
+            if (confirm('¿Eliminar este material?')) {
+                data.materiales = data.materiales.filter(x => x.id !== id);
+                await guardarDatosFirebase();
+                renderTablaMateriales();
+                toast('Material eliminado ✅');
+            }
+        }
+
+        // ──────────────────────────────────────
+        // CLIENTES
+        // ──────────────────────────────────────
+        function renderTablaClientes() { document.getElementById('clientes-tbody').innerHTML = data.clientes.map(c =>
+                `<tr><td><strong>${c.nombre}</strong></td><td>${c.telefono||'-'}</td><td>${c.vehiculo||'-'}</td><td>${c.placa||'-'}</td><td><button class="btn btn-sm btn-primary" onclick="usarClientePreset('${c.id}')">⚡</button> <button class="btn btn-sm btn-secondary" onclick="editarCliente('${c.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button> <button class="btn btn-sm btn-danger" onclick="eliminarCliente('${c.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></td></tr>`
+                ).join('') || '<tr><td colspan="5" class="empty-state">No hay clientes</td></tr>'; }
+
+        function abrirModalCliente(cEd = null) { const esEd = !!cEd; const c = cEd || { id: '', nombre: '', telefono: '',
+                vehiculo: '', placa: '' };
+            abrirModal(
+                esEd ? 'Editar Cliente' : 'Agregar Cliente',
+                `<div class="form-row"><div class="form-group"><label>Nombre</label><input id="mf-cnombre" value="${c.nombre||''}"></div><div class="form-group"><label>Teléfono</label><input id="mf-ctelefono" value="${c.telefono||''}"></div></div><div class="form-row"><div class="form-group"><label>Vehículo</label><input id="mf-cvehiculo" value="${c.vehiculo||''}"></div><div class="form-group"><label>Placa</label><input id="mf-cplaca" value="${c.placa||''}"></div></div>`,
+                `<button class="btn btn-secondary" onclick="cerrarModalDirecto()">Cancelar</button><button class="btn btn-primary" onclick="guardarCliente('${c.id}')">${esEd?'Actualizar':'Guardar'}</button>`
+            );
+        }
+
+        async function guardarCliente(idOrig) { const c = { id: idOrig || generarId(), nombre: document.getElementById(
+                    'mf-cnombre').value, telefono: document.getElementById('mf-ctelefono').value, vehiculo: document
+                .getElementById('mf-cvehiculo').value, placa: document.getElementById('mf-cplaca').value }; if (!c
+                .nombre) { toast('Nombre obligatorio', 'error'); return; } if (idOrig) { const idx = data.clientes
+                .findIndex(x => x.id === idOrig); if (idx >= 0) data.clientes[idx] = c; } else data.clientes.push(
+            c); await guardarDatosFirebase();
+            cerrarModalDirecto();
+            renderTablaClientes();
+            toast(idOrig ? 'Cliente actualizado' : 'Cliente agregado'); }
+
+        function usarClientePreset(id) { const c = data.clientes.find(x => x.id === id); if (!c) return; document
+                .querySelector('[data-section="trabajos"]').click();
+            setTimeout(() => abrirModalTrabajo({ id: '', clienteId: c.id, vehiculo: c.vehiculo || '', descripcion: '',
+                fecha: hoyFecha(), estado: 'pendiente', costo: '', trabajadorId: '' }), 300);
+            toast(`Preset: ${c.nombre}`); }
+
+        function editarCliente(id) { const c = data.clientes.find(x => x.id === id); if (c) abrirModalCliente(c); }
+
+        async function eliminarCliente(id) {
+            if (confirm('¿Eliminar este cliente?')) {
+                data.clientes = data.clientes.filter(x => x.id !== id);
+                await guardarDatosFirebase();
+                renderTablaClientes();
+                toast('Cliente eliminado ✅');
+            }
+        }
+
+        // ──────────────────────────────────────
+        // PRESUPUESTOS
+        // ──────────────────────────────────────
+        function renderTablaPresupuestos() { document.getElementById('presupuestos-tbody').innerHTML = data.presupuestos.map(
+                p =>
+                `<tr><td>${p.descripcion}</td><td>S/ ${(parseFloat(p.monto)||0).toFixed(2)}</td><td>${p.fechaLimite||'-'}</td><td><span class="status-badge ${p.estado==='pendiente'?'status-pendiente':'status-completado'}">${p.estado}</span></td><td><button class="btn btn-sm btn-success" onclick="marcarPresupuestoCompletado('${p.id}')">✅</button> <button class="btn btn-sm btn-danger" onclick="eliminarPresupuesto('${p.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></td></tr>`
+                ).join('') || '<tr><td colspan="5" class="empty-state">No hay presupuestos</td></tr>'; }
+
+        function abrirModalPresupuesto() {
+            abrirModal(
+                'Nuevo Presupuesto',
+                `<div class="form-group"><label>Descripción</label><input id="mf-pdesc"></div><div class="form-row"><div class="form-group"><label>Monto (S/)</label><input type="number" id="mf-pmonto" step="0.01"></div><div class="form-group"><label>Fecha Límite</label><input type="date" id="mf-pfecha" value="${hoyFecha()}"></div></div>`,
+                `<button class="btn btn-secondary" onclick="cerrarModalDirecto()">Cancelar</button><button class="btn btn-primary" onclick="guardarPresupuesto()">Guardar</button>`
+            );
+        }
+
+        async function guardarPresupuesto() { const p = { id: generarId(), descripcion: document.getElementById('mf-pdesc')
+                    .value, monto: parseFloat(document.getElementById('mf-pmonto').value) || 0, fechaLimite: document
+                .getElementById('mf-pfecha').value, estado: 'pendiente' }; if (!p.descripcion) { toast(
+                    'Descripción obligatoria', 'error'); return; }
+            data.presupuestos.push(p); await guardarDatosFirebase();
+            cerrarModalDirecto();
+            renderTablaPresupuestos();
+            toast('Presupuesto registrado'); }
+
+        async function marcarPresupuestoCompletado(id) { const p = data.presupuestos.find(x => x.id === id); if (p) { p
+                    .estado = 'completado'; await guardarDatosFirebase();
+                renderTablaPresupuestos();
+                toast('Completado ✅'); } }
+
+        async function eliminarPresupuesto(id) {
+            if (confirm('¿Eliminar este presupuesto?')) {
+                data.presupuestos = data.presupuestos.filter(x => x.id !== id);
+                await guardarDatosFirebase();
+                renderTablaPresupuestos();
+                toast('Presupuesto eliminado ✅');
+            }
+        }
+
+        // ──────────────────────────────────────
+        // EGRESOS
+        // ──────────────────────────────────────
+        function renderTablaEgresos() { document.getElementById('egresos-tbody').innerHTML = data.egresos.map(e =>
+                `<tr><td>${e.descripcion}</td><td>S/ ${(parseFloat(e.monto)||0).toFixed(2)}</td><td><span class="tag tag-${e.metodoPago}">${e.metodoPago}</span></td><td>${e.fecha}</td><td><button class="btn btn-sm btn-danger" onclick="eliminarEgreso('${e.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></td></tr>`
+                ).join('') || '<tr><td colspan="5" class="empty-state">No hay egresos</td></tr>'; }
+
+        function abrirModalEgreso() {
+            abrirModal(
+                'Registrar Egreso',
+                `<div class="form-group"><label>Descripción</label><input id="mf-edesc"></div><div class="form-row"><div class="form-group"><label>Monto (S/)</label><input type="number" id="mf-emonto" step="0.01"></div><div class="form-group"><label>Método de Pago</label><select id="mf-emetodo"><option value="efectivo">Efectivo</option><option value="yape">Yape</option><option value="otro">Otro</option></select></div></div><div class="form-group"><label>Fecha</label><input type="date" id="mf-efecha" value="${hoyFecha()}"></div>`,
+                `<button class="btn btn-secondary" onclick="cerrarModalDirecto()">Cancelar</button><button class="btn btn-primary" onclick="guardarEgreso()">Registrar</button>`
+            );
+        }
+
+        async function guardarEgreso() { const e = { id: generarId(), descripcion: document.getElementById('mf-edesc')
+                    .value, monto: parseFloat(document.getElementById('mf-emonto').value) || 0, metodoPago: document
+                .getElementById('mf-emetodo').value, fecha: document.getElementById('mf-efecha').value }; if (!e
+                .descripcion || e.monto <= 0) { toast('Complete los campos', 'error'); return; }
+            data.egresos.push(e); await guardarDatosFirebase();
+            cerrarModalDirecto();
+            renderTablaEgresos();
+            renderDashboard();
+            toast('Egreso registrado'); }
+
+        async function eliminarEgreso(id) {
+            if (confirm('¿Eliminar este egreso?')) {
+                data.egresos = data.egresos.filter(x => x.id !== id);
+                await guardarDatosFirebase();
+                renderTablaEgresos();
+                renderDashboard();
+                toast('Egreso eliminado ✅');
+            }
+        }
+
+        // ──────────────────────────────────────
+        // ASISTENCIA
+        // ──────────────────────────────────────
+        function renderAsistencia() { const fechaInput = document.getElementById('fecha-asistencia'); if (!fechaInput
+                .value) fechaInput.value = hoyFecha(); const fecha = fechaInput.value;
+            document.getElementById('asistencia-tbody').innerHTML = data.trabajadores.map(t => { const asist = data
+                    .asistencias.find(a => a.trabajadorId === t.id && a.fecha === fecha); const presente = asist ?
+                    asist.presente : true; const ahora = new Date(fecha); const faltasMes = getFaltasMes(t.id, ahora
+                        .getMonth(), ahora.getFullYear()); const descuento = presente ? 0 :
+                    getDescuentoPorFalta(t.id); return `<tr><td><strong>${t.nombre}</strong></td><td><input type="checkbox" ${presente?'checked':''} onchange="toggleAsistencia('${t.id}','${fecha}',this.checked)" style="width:18px;height:18px;accent-color:var(--red);"></td><td style="color:${presente?'#2ecc71':'#e63946'};">${presente?'S/ 0.00':'- S/ '+descuento.toFixed(2)}</td><td>${faltasMes} falta(s)</td></tr>`; }
+                ).join('') || '<tr><td colspan="4" class="empty-state">No hay trabajadores</td></tr>'; }
+
+        async function toggleAsistencia(tid, fecha, presente) { const idx = data.asistencias.findIndex(a => a
+                .trabajadorId === tid && a.fecha === fecha); if (idx >= 0) { data.asistencias[idx].presente =
+                presente; } else { data.asistencias.push({ id: generarId(), trabajadorId: tid, fecha, presente }); }
+            await guardarDatosFirebase();
+            renderAsistencia();
+            renderDashboard(); }
+
+        async function marcarTodosPresentes() { const fecha = document.getElementById('fecha-asistencia').value;
+            data.trabajadores.forEach(t => { const idx = data.asistencias.findIndex(a => a.trabajadorId === t.id && a
+                    .fecha === fecha); if (idx >= 0) { data.asistencias[idx].presente = true; } else { data
+                    .asistencias.push({ id: generarId(), trabajadorId: t.id, fecha, presente: true }); } }); await
+            guardarDatosFirebase();
+            renderAsistencia();
+            renderDashboard();
+            toast('Todos presentes ✅'); }
+
+        // ──────────────────────────────────────
+        // CALENDARIO
+        // ──────────────────────────────────────
+        let calendarMonth = new Date().getMonth(),
+            calendarYear = new Date().getFullYear();
+
+        function renderCalendario() { const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio',
+                'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+            ]; const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']; const primerDia = new Date(
+                calendarYear, calendarMonth, 1).getDay(); const diasEnMes = new Date(calendarYear, calendarMonth + 1,
+                0).getDate(); const hoy = new Date(); let html =
+                `<div class="calendar-header"><button class="btn btn-sm btn-secondary" onclick="cambiarMes(-1)">◀</button><h3>${meses[calendarMonth]} ${calendarYear}</h3><button class="btn btn-sm btn-secondary" onclick="cambiarMes(1)">▶</button></div><div class="calendar-grid">`;
+            diasSemana.forEach(d => html += `<div class="calendar-day-name">${d}</div>`); for (let i = 0; i <
+                primerDia; i++) html += `<div class="calendar-day other-month"></div>`; for (let dia = 1; dia <=
+                diasEnMes; dia++) { const fechaStr =
+                `${calendarYear}-${String(calendarMonth+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`; const
+                esHoy = dia === hoy.getDate() && calendarMonth === hoy.getMonth() && calendarYear === hoy
+                .getFullYear(); const tieneTrabajo = data.trabajos.some(t => t.fecha === fechaStr); const tienePago =
+                data.trabajadores.some(t => t.fechaPago == dia); const tienePresupuesto = data.presupuestos.some(p =>
+                    p.fechaLimite === fechaStr && p.estado === 'pendiente'); let dots = ''; if (tieneTrabajo) dots +=
+                    '<span class="dot red"></span> '; if (tienePago) dots += '<span class="dot green"></span> '; if (
+                    tienePresupuesto) dots += '<span class="dot blue"></span> ';
+                html +=
+                    `<div class="calendar-day${esHoy?' today':''}" onclick="mostrarDetalleDia('${fechaStr}')"><span>${dia}</span><div>${dots}</div></div>`; }
+            html += '</div>';
+            document.getElementById('calendar-widget').innerHTML = html; }
+
+        function cambiarMes(d) { calendarMonth += d; if (calendarMonth < 0) { calendarMonth = 11;
+                calendarYear--; } if (calendarMonth > 11) { calendarMonth = 0;
+                calendarYear++; }
+            renderCalendario(); }
+
+        function mostrarDetalleDia(fechaStr) { const trabajosDia = data.trabajos.filter(t => t.fecha === fechaStr); const
+                pagosDia = data.trabajadores.filter(t => t.fechaPago == new Date(fechaStr).getDate()); const
+            presupuestosDia = data.presupuestos.filter(p => p.fechaLimite === fechaStr); let html =
+                `<h4 style="color:var(--white);margin-bottom:8px;">📅 ${fechaStr}</h4>`; html +=
+                `<p><strong>🔩 Trabajos:</strong> ${trabajosDia.length>0?trabajosDia.map(t=>t.descripcion+' ('+t.estado+')').join(', '):'Ninguno'}</p>`;
+            html +=
+                `<p><strong>💵 Pagos:</strong> ${pagosDia.length>0?pagosDia.map(t=>t.nombre+' (S/ '+getTotalPagoTrabajador(t.id).toFixed(2)+')').join(', '):'Ninguno'}</p>`;
+            html +=
+                `<p><strong>📋 Presupuestos:</strong> ${presupuestosDia.length>0?presupuestosDia.map(p=>p.descripcion+' (S/ '+parseFloat(p.monto).toFixed(2)+')').join(', '):'Ninguno'}</p>`;
+            document.getElementById('calendar-detail-content').innerHTML = html; }
+
+        // ──────────────────────────────────────
+        // EXPORTAR
+        // ──────────────────────────────────────
+        function actualizarPreviewExport() { const mesVal = document.getElementById('mes-exportar').value; if (!mesVal)
+            return; const [anio, mes] = mesVal.split('-').map(Number); const tM = data.trabajos.filter(t => { const d =
+                    new Date(t.fecha); return d.getMonth() === mes - 1 && d.getFullYear() === anio; }); const eM = data
+                .egresos.filter(e => { const d = new Date(e.fecha); return d.getMonth() === mes - 1 && d.getFullYear() ===
+                    anio; }); const ing = tM.reduce((s, t) => s + (parseFloat(t.costo) || 0), 0); const egr = eM.reduce(
+                    (s, e) => s + (parseFloat(e.monto) || 0), 0); const pag = data.trabajadores.reduce((s, t) => s +
+                    getTotalPagoTrabajador(t.id), 0);
+            document.getElementById('export-preview').innerHTML =
+                `<div class="stats-grid"><div class="stat-card"><div class="stat-label">Ingresos</div><div class="stat-value">S/ ${ing.toFixed(2)}</div></div><div class="stat-card gold"><div class="stat-label">Egresos</div><div class="stat-value">S/ ${egr.toFixed(2)}</div></div><div class="stat-card blue"><div class="stat-label">Pagos Personal</div><div class="stat-value">S/ ${pag.toFixed(2)}</div></div><div class="stat-card green"><div class="stat-label">Ganancia Neta</div><div class="stat-value">S/ ${(ing-egr-pag).toFixed(2)}</div></div></div>`; }
+
+        function exportarExcel() { const mesVal = document.getElementById('mes-exportar').value; if (!mesVal) { toast(
+                'Seleccione un mes', 'error'); return; } const [anio, mes] = mesVal.split('-').map(Number); const tM = data
+                .trabajos.filter(t => { const d = new Date(t.fecha); return d.getMonth() === mes - 1 && d.getFullYear() ===
+                    anio; }); const eM = data.egresos.filter(e => { const d = new Date(e.fecha); return d.getMonth() ===
+                    mes - 1 && d.getFullYear() === anio; }); const wb = XLSX.utils.book_new(); const tD = [
+                ['ID', 'Cliente', 'Vehículo', 'Descripción', 'Fecha', 'Estado', 'Costo (S/)', 'Trabajador']
+            ];
+            tM.forEach(t => tD.push([t.id.slice(-6), getClienteNombre(t.clienteId), t.vehiculo, t.descripcion, t
+                .fecha, t.estado, parseFloat(t.costo) || 0, getTrabajadorNombre(t.trabajadorId)
+            ]));
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(tD), 'Trabajos'); const eD = [
+                ['ID', 'Descripción', 'Monto (S/)', 'Método Pago', 'Fecha']
+            ];
+            eM.forEach(e => eD.push([e.id.slice(-6), e.descripcion, parseFloat(e.monto) || 0, e.metodoPago, e
+            .fecha]));
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(eD), 'Egresos'); const ing = tM.reduce((s, t) => s +
+                (parseFloat(t.costo) || 0), 0); const egr = eM.reduce((s, e) => s + (parseFloat(e.monto) || 0), 0); const
+                pag = data.trabajadores.reduce((s, t) => s + getTotalPagoTrabajador(t.id), 0);
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+                ['Concepto', 'Monto (S/)'], ['Ingresos', ing], ['Egresos', egr], ['Pagos a Personal', pag],
+                ['Ganancia Neta', ing - egr - pag]
+            ]), 'Resumen');
+            XLSX.writeFile(wb, `EL_CHINO_CARRANZA_Resumen_${mesVal}.xlsx`);
+            toast('Excel exportado ✅'); }
+
+        function exportarResumenCompleto() { const wb = XLSX.utils.book_new(); const tD = [
+                ['ID', 'Cliente', 'Vehículo', 'Descripción', 'Fecha', 'Estado', 'Costo (S/)', 'Trabajador']
+            ];
+            data.trabajos.forEach(t => tD.push([t.id.slice(-6), getClienteNombre(t.clienteId), t.vehiculo, t
+                .descripcion, t.fecha, t.estado, parseFloat(t.costo) || 0, getTrabajadorNombre(t.trabajadorId)
+            ]));
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(tD), 'Todos los Trabajos'); const eD = [
+                ['ID', 'Descripción', 'Monto (S/)', 'Método Pago', 'Fecha']
+            ];
+            data.egresos.forEach(e => eD.push([e.id.slice(-6), e.descripcion, parseFloat(e.monto) || 0, e.metodoPago,
+            e.fecha]));
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(eD), 'Todos los Egresos'); const ahora = new Date();
+            const trD = [['Nombre', 'Sueldo', 'Anticipos', 'Faltas Mes', 'Total a Pagar']];
+            data.trabajadores.forEach(t => { const f = getFaltasMes(t.id, ahora.getMonth(), ahora.getFullYear());
+                trD.push([t.nombre, parseFloat(t.sueldo) || 0, getAnticiposTrabajador(t.id), f,
+                    getTotalPagoTrabajador(t.id)
+                ]); });
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(trD), 'Trabajadores');
+            XLSX.writeFile(wb, 'EL_CHINO_CARRANZA_Resumen_Completo.xlsx');
+            toast('Resumen completo exportado ✅'); }
+
+        // ──────────────────────────────────────
+        // INICIALIZACIÓN CON AUTH
+        // ──────────────────────────────────────
+        async function inicializarApp() {
+            await waitForFirebase();
+            firebaseModules.onAuthStateChanged(auth, async (user) => {
+                currentUser = user;
+                const loginScreen = document.getElementById('loginScreen');
+                const appContainer = document.getElementById('appContainer');
+                if (user) {
+                    loginScreen.style.display = 'none';
+                    appContainer.classList.remove('hidden');
+                    appContainer.style.display = 'flex';
+                    await cargarDatosFirebase();
+                    activarTiempoReal();
+                    renderDashboard();
+                    renderTablaTrabajos();
+                    renderTablaTrabajadores();
+                    renderTablaMateriales();
+                    renderTablaClientes();
+                    renderTablaPresupuestos();
+                    renderTablaEgresos();
+                    renderAsistencia();
+                    renderCalendario();
+                    document.getElementById('mes-exportar').value = new Date().toISOString().slice(0, 7);
+                    actualizarPreviewExport();
+                } else {
+                    loginScreen.style.display = 'flex';
+                    appContainer.classList.add('hidden');
+                    appContainer.style.display = 'none';
+                    data = { trabajos: [], trabajadores: [], materiales: [], clientes: [], presupuestos: [], egresos: [], asistencias: [], anticipos: [] };
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', inicializarApp);
+        document.getElementById('mes-exportar')?.addEventListener('change', actualizarPreviewExport);
+    </script>
+</body>
+</html>
